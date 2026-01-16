@@ -29,6 +29,7 @@ import time
 import argparse
 import json
 import re
+import glob
 from urllib.parse import urlparse, quote_plus
 from pathlib import Path
 from dotenv import load_dotenv
@@ -185,6 +186,34 @@ def extract_domain(url: str) -> str:
     return domain.split('/')[0]
 
 
+def check_existing_images(output_dir: str, robot_name: str, manufacturer_name: str = None) -> bool:
+    """
+    Check if robot already has images in output directory.
+
+    Args:
+        output_dir: Base directory to search
+        robot_name: Name of the robot to check
+        manufacturer_name: Optional manufacturer folder name
+
+    Returns:
+        True if images exist for this robot, False otherwise
+    """
+    safe_name = sanitize_filename(robot_name)
+
+    # Check in manufacturer folder if provided
+    if manufacturer_name:
+        manuf_folder = os.path.join(output_dir, sanitize_filename(manufacturer_name))
+        pattern = os.path.join(manuf_folder, f"{safe_name}_*.*")
+        existing = glob.glob(pattern)
+        if existing:
+            return True
+
+    # Also check recursively in output dir
+    pattern = os.path.join(output_dir, '**', f"{safe_name}_*.*")
+    existing = glob.glob(pattern, recursive=True)
+    return len(existing) > 0
+
+
 def process_csv(
     csv_path: str,
     output_dir: str,
@@ -194,11 +223,12 @@ def process_csv(
     manufacturer_col: str = None,
     url_col: str = None,
     robots_col: str = None,
-    skip_site_search: bool = False
+    skip_site_search: bool = False,
+    skip_existing: bool = False
 ):
     """
     Process CSV and download robot images.
-    
+
     Args:
         csv_path: Path to input CSV
         output_dir: Base directory for downloaded images
@@ -209,6 +239,7 @@ def process_csv(
         url_col: Column name for manufacturer URL (auto-detect if None)
         robots_col: Column name for robots (auto-detect if None)
         skip_site_search: If True, skip manufacturer site search and go straight to web search
+        skip_existing: If True, skip robots that already have images in output directory
     """
     searcher = GoogleImageSearch(api_key, cx)
     
@@ -276,7 +307,12 @@ def process_csv(
             
             for robot in robots:
                 print(f"\n  [{robot}]")
-                
+
+                # Skip if images already exist for this robot
+                if skip_existing and check_existing_images(output_dir, robot, manufacturer):
+                    print(f"    [SKIP] Already has images")
+                    continue
+
                 images_downloaded = 0
                 search_query = f"{manufacturer} {robot} robot"
                 
@@ -433,6 +469,7 @@ CSV Format:
     parser.add_argument('--cx', required=False, help='Google Custom Search Engine ID')
     parser.add_argument('--num', type=int, default=3, help='Number of images per robot (default: 3)')
     parser.add_argument('--skip-site-search', action='store_true', help='Skip manufacturer site search')
+    parser.add_argument('--skip-existing', action='store_true', help='Skip robots that already have images downloaded')
     parser.add_argument('--create-sample', metavar='PATH', help='Create a sample CSV file')
     
     args = parser.parse_args()
@@ -475,7 +512,8 @@ CSV Format:
         api_key=api_key,
         cx=cx,
         images_per_robot=args.num,
-        skip_site_search=args.skip_site_search
+        skip_site_search=args.skip_site_search,
+        skip_existing=args.skip_existing
     )
     
     print_summary(results, args.output_dir)
