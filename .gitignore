@@ -1,0 +1,74 @@
+# API credentials - NEVER commit these
+.env
+.env.local
+.env.*.local
+*.env
+credentials.json
+
+# Downloaded images (can be large)
+robot_images/
+robot_images_retry/
+images/
+output/
+test_images/
+test_images2/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+tmpclaude-*
+
+# Notion sync
+.notion-sync.json
+
+# Template folder (after setup)
+claude-project-template-personal/
